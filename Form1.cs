@@ -38,6 +38,7 @@ namespace SeriesSortCleanup
             txtRenameTargetDir.Text = Properties.Settings.Default.TargetDirRename.ToString();
             txtWinrarSrcDir.Text = Properties.Settings.Default.WinRARDir.ToString();
             txtRenameSize.Text = Properties.Settings.Default.MinRenameSize.ToString();
+            txtTargetExtract.Text = Properties.Settings.Default.TargetExtractDir.ToString();
         }
 
         private void AddFeedback(string text)
@@ -1070,7 +1071,7 @@ namespace SeriesSortCleanup
         //    Thread.Sleep(4000);
         //}
 
-        private delegate void MyTaskWorkerDelegate(int StepCounter);
+        private delegate void MySortTaskWorkerDelegate(int StepCounter);
 
         private bool _myTaskIsRunning = false;
 
@@ -1084,7 +1085,7 @@ namespace SeriesSortCleanup
         //If an asynchronous operation is already running, an InvalidOperati­onException is thrown.
         public void MySortTaskAsync(int StepCounter)
         {
-            MyTaskWorkerDelegate worker = new MyTaskWorkerDelegate(CopyFiles);
+            MySortTaskWorkerDelegate worker = new MySortTaskWorkerDelegate(CopyFiles);
             AsyncCallback completedCallback = new AsyncCallback(MyTaskCompletedCallback);
 
             lock (_sync)
@@ -1105,7 +1106,7 @@ namespace SeriesSortCleanup
         {
 
             // get the original worker delegate and the AsyncOperation instance
-            MyTaskWorkerDelegate worker = (MyTaskWorkerDelegate)((AsyncResult)ar).AsyncDelegate;
+            MySortTaskWorkerDelegate worker = (MySortTaskWorkerDelegate)((AsyncResult)ar).AsyncDelegate;
             AsyncOperation async = (AsyncOperation)ar.AsyncState;
 
             // finish the asynchronous operation
@@ -1261,7 +1262,6 @@ namespace SeriesSortCleanup
 
         #endregion
 
-
         #endregion
 
 
@@ -1376,32 +1376,6 @@ namespace SeriesSortCleanup
             }
         }
 
-        private void btnBrowseWinrar_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog filedialog = new OpenFileDialog();
-            filedialog.Filter = "EXE files (*.exe)|*.exe"; // "Text files (*.txt)|*.txt|All files (*.*)|*.*"
-            filedialog.InitialDirectory = @"C:\Program Files\WinRAR";
-
-            DialogResult result = filedialog.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                _sWinrarPath = filedialog.FileName;
-
-                txtWinrarSrcDir.Text = _sWinrarPath;
-            }
-        }
-
-        private void btnBrowseTargetExtract_Click(object sender, EventArgs e)
-        {
-            FolderBrowserDialog FolderDiag = new FolderBrowserDialog();
-            DialogResult result = FolderDiag.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                _sExtractTargetPath = FolderDiag.SelectedPath;
-                txtTargetExtract.Text = _sExtractTargetPath;
-            }
-        }
-
         private void btnRename_Click(object sender, EventArgs e)
         {
             string WarningSizeText = txtRenameSize.Text;
@@ -1449,8 +1423,6 @@ namespace SeriesSortCleanup
 
 
 
-
-
         #region WINRAR EXTRACT
 
 
@@ -1458,6 +1430,112 @@ namespace SeriesSortCleanup
 
         string _sExtractTargetPath = "";
         string _sWinrarPath = "";
+
+        #endregion
+
+
+        #region WINRAR Async Threading
+        private bool _myRenameTaskIsRunning = false;
+        private readonly object _Renamesync = new object();
+
+        public bool IsRenameBusy
+        {
+            get
+            {
+                return _myRenameTaskIsRunning;
+            }
+        }
+
+        private delegate void MyRenameTaskWorkerDelegate(int StepCounter);
+
+        public void MyRenameTaskAsync(int StepCounter)
+        {
+            MyRenameTaskWorkerDelegate worker = new MyRenameTaskWorkerDelegate(unrarFiles);
+            AsyncCallback completedCallback = new AsyncCallback(MyRenameTaskCompletedCallback);
+
+            lock (_Renamesync)
+            {
+                if (_myRenameTaskIsRunning)
+                {
+                    throw new InvalidOperationException("The control is currently busy.");
+                }
+
+                AsyncOperation async = AsyncOperationManager.CreateOperation(null);
+                worker.BeginInvoke(StepCounter, completedCallback, async);
+                _myTaskIsRunning = true;
+            }
+        }
+
+        private void MyRenameTaskCompletedCallback(IAsyncResult ar)
+        {
+            // get the original worker delegate and the AsyncOperation instance
+            MyRenameTaskWorkerDelegate worker = (MyRenameTaskWorkerDelegate)((AsyncResult)ar).AsyncDelegate;
+            AsyncOperation async = (AsyncOperation)ar.AsyncState;
+
+            // finish the asynchronous operation
+            worker.EndInvoke(ar);
+
+            // clear the running task flag
+            lock (_Renamesync)
+            {
+                _myRenameTaskIsRunning = false;
+            }
+
+            // raise the completed event
+            AsyncCompletedEventArgs completedArgs = new AsyncCompletedEventArgs(null, false, null);
+            async.PostOperationCompleted((object e) => OnMyRenameTaskCompleted((AsyncCompletedEventArgs)e), completedArgs);
+        }
+
+        protected virtual void OnMyRenameTaskCompleted(AsyncCompletedEventArgs e)
+        {
+            if (MyRenameTaskCompleted == null)
+            {
+                foreach (string item in feedback)
+                {
+                    AddFeedback(item);
+                }
+
+                feedback.Clear();
+
+                if (CheckStep == max)
+                {
+                    AddFeedback("");
+                    AddFeedback("--------------------------------------------------------------");
+                    AddFeedback(string.Format("DONE : {0} - Attempted", CheckStep.ToString()));
+
+                    if (ErrorList.Count > 0)
+                    {
+                        int count = ErrorList.Count;
+                        AddFeedback(string.Format("FAILED : {0} ", count.ToString()));
+                        AddFeedback("--------------------------------------------------------------");
+                        
+                        foreach (string errorList in ErrorList)
+                        {
+                            AddFeedback(string.Format(" - {0} ", errorList.ToString()));
+                        }
+
+                        AddFeedback("--------------------------------------------------------------");
+                    }
+
+                    WriteToLog();
+                }
+                else
+                {
+                    string directory = DirRAR[CheckStep];
+                    AddFeedback(string.Format("Processing : {0} ", directory));
+                    Thread.Sleep(5000);
+                    MyRenameTaskAsync(CheckStep);
+                }
+            }
+            else
+            {
+                MyRenameTaskCompleted(this, e);
+            }
+        }
+
+        public event AsyncCompletedEventHandler MyRenameTaskCompleted;
+
+        
 
         #endregion
 
@@ -1579,6 +1657,32 @@ namespace SeriesSortCleanup
 
         #region WINRAR EXTRACT EVENTS
 
+        private void btnBrowseWinrar_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog filedialog = new OpenFileDialog();
+            filedialog.Filter = "EXE files (*.exe)|*.exe"; // "Text files (*.txt)|*.txt|All files (*.*)|*.*"
+            filedialog.InitialDirectory = @"C:\Program Files\WinRAR";
+
+            DialogResult result = filedialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                _sWinrarPath = filedialog.FileName;
+
+                txtWinrarSrcDir.Text = _sWinrarPath;
+            }
+        }
+
+        private void btnBrowseTargetExtract_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog FolderDiag = new FolderBrowserDialog();
+            DialogResult result = FolderDiag.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                _sExtractTargetPath = FolderDiag.SelectedPath;
+                txtTargetExtract.Text = _sExtractTargetPath;
+            }
+        }
+
         private void btnWinRarExtract_Click(object sender, EventArgs e)
         {
             try
@@ -1588,6 +1692,7 @@ namespace SeriesSortCleanup
                 AddFeedback("Fetching directories to Extract");
                 AddFeedback("");
 
+                //get and set target directory
                 _sExtractTargetPath = txtTargetExtract.Text;
                 if (Directory.Exists(_sExtractTargetPath))
                 {
@@ -1600,6 +1705,7 @@ namespace SeriesSortCleanup
                     return;
                 }
 
+                // get and set winrar directory
                 _sWinrarPath = txtWinrarSrcDir.Text;
                 if (File.Exists(_sWinrarPath))
                 {
@@ -1621,6 +1727,10 @@ namespace SeriesSortCleanup
 
                 if (DirRAR.Count > 0)
                 {
+                    AddFeedback("");
+                    string directory = DirRAR[CheckStep];
+                    AddFeedback(string.Format("Processing : {0} ", directory));
+
                     max = DirRAR.Count;
                     MyRenameTaskAsync(CheckStep);
                 }
