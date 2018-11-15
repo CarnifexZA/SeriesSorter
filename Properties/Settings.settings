@@ -1,0 +1,33 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SeriesSortCleanup.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="sourceDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)">c:\temp</Value>
+    </Setting>
+    <Setting Name="destinationDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)">c:\temp</Value>
+    </Setting>
+    <Setting Name="sourceDirCheck" Type="System.String" Scope="User">
+      <Value Profile="(Default)">c:\temp</Value>
+    </Setting>
+    <Setting Name="destinationDirCheck" Type="System.String" Scope="User">
+      <Value Profile="(Default)">c:\temp</Value>
+    </Setting>
+    <Setting Name="WarningSize" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="TargetDirRename" Type="System.String" Scope="User">
+      <Value Profile="(Default)">G:\Testing\rar series</Value>
+    </Setting>
+    <Setting Name="MinRenameSize" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">120</Value>
+    </Setting>
+    <Setting Name="WinRARDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Program Files\WinRAR\winrar.exe</Value>
+    </Setting>
+    <Setting Name="TargetExtractDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)">G:\Testing\rar series</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
