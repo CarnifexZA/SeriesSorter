@@ -1352,11 +1352,11 @@ namespace SeriesSortCleanup
             {
                 AddFeedback(string.Format("getDirectoriesToRename() - ERROR EXCEPTION : {0}", ex.ToString()));
             }
-            finally
-            {
-                AllDirs.Clear();
-                Dispose();
-            }
+            //finally
+            //{
+            //    AllDirs.Clear();
+            //    Dispose();
+            //}
 
         }
 
@@ -1378,43 +1378,51 @@ namespace SeriesSortCleanup
 
         private void btnRename_Click(object sender, EventArgs e)
         {
-            string WarningSizeText = txtRenameSize.Text;
-
-            if (IsDigitsOnly(WarningSizeText))
+            try
             {
-                MinDirSize = Convert.ToInt32(txtRenameSize.Text);
-                Properties.Settings.Default.MinRenameSize = MinDirSize;
+                string WarningSizeText = txtRenameSize.Text;
+
+                if (IsDigitsOnly(WarningSizeText))
+                {
+                    MinDirSize = Convert.ToInt32(txtRenameSize.Text);
+                    Properties.Settings.Default.MinRenameSize = MinDirSize;
+                }
+                else
+                {
+                    AddFeedback("Invalid warning size.");
+                    return;
+                }
+
+                _sRenameTargetPath = txtRenameTargetDir.Text;
+                if (Directory.Exists(_sRenameTargetPath))
+                {
+                    Properties.Settings.Default.TargetDirRename = _sRenameTargetPath;
+                }
+                else
+                {
+                    AddFeedback(string.Format("Rename target directory does not exist - {0}", _sRenameTargetPath));
+                    return;
+                }
+
+                Properties.Settings.Default.Save();
+
+                ClearFeedback();
+
+                AddFeedback(string.Format("Renaming directory files for sizes over : {0}mb", MinDirSize.ToString()));
+                AddFeedback("");
+
+                AddFeedback("Fetching directories to Rename");
+                AddFeedback("");
+
+                getAllDirectories();
+
+                getDirectoriesToRename();
             }
-            else
+            catch (Exception ex)
             {
-                AddFeedback("Invalid warning size.");
-                return;
+                MessageBox.Show(ex.ToString());
+                AddFeedback(string.Format("btnRename_Click() - ERROR EXCEPTION : {0}", ex.ToString()));
             }
-
-            _sRenameTargetPath = txtRenameTargetDir.Text;
-            if (Directory.Exists(_sRenameTargetPath))
-            {
-                Properties.Settings.Default.TargetDirRename = _sRenameTargetPath;
-            }
-            else
-            {
-                AddFeedback(string.Format("Rename target directory does not exist - {0}",_sRenameTargetPath));
-                return;
-            }
-
-            Properties.Settings.Default.Save();
-
-            ClearFeedback();
-
-            AddFeedback(string.Format("Renaming directory files for sizes over : {0}mb", MinDirSize.ToString()));
-            AddFeedback("");
-
-            AddFeedback("Fetching directories to Rename");
-            AddFeedback("");
-
-            getAllDirectories();
-
-            getDirectoriesToRename();
         }
 
         #endregion
