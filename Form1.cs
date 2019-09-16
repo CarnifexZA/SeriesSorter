@@ -1640,7 +1640,12 @@ namespace SeriesSortCleanup
                     TotalFiles++;
                     string fullPath = dir.ToString();
 
-                    string[] myFiles = Directory.GetFiles(fullPath, "*.rar", SearchOption.AllDirectories);
+                    //string[] myFiles = Directory.GetFiles(fullPath, "*.rar|*.7z", SearchOption.AllDirectories);
+                    //https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters/8363526
+                    //var files = Directory.EnumerateFiles("C:\\path", "*.*", SearchOption.AllDirectories).Where(s => s.EndsWith(".mp3") || s.EndsWith(".jpg"));
+
+                    var files = Directory.GetFiles(fullPath, "*.*", SearchOption.AllDirectories).Where(s => s.EndsWith(".rar") || s.EndsWith(".001"));
+                    string[] myFiles = files.Cast<string>().ToArray();
 
                     if (myFiles.Length > 0)
                     {
