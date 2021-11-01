@@ -37,13 +37,14 @@ namespace SeriesSortCleanup
             //Rename and Extract directories fields
             txtRenameTargetDir.Text = Properties.Settings.Default.TargetDirRename.ToString();
             txtWinrarSrcDir.Text = Properties.Settings.Default.WinRARDir.ToString();
+            txt7ZipSrcDir.Text = Properties.Settings.Default.SevenZipDir.ToString();
             txtRenameSize.Text = Properties.Settings.Default.MinRenameSize.ToString();
             txtTargetExtract.Text = Properties.Settings.Default.TargetExtractDir.ToString();
         }
 
         private void AddFeedback(string text)
         {
-            txtFeedback.AppendText(text + "\n");
+            txtFeedback.AppendText(text + "\r\n");
         }
 
         private void ClearFeedback()
@@ -1282,6 +1283,7 @@ namespace SeriesSortCleanup
         #endregion
 
 
+
         #region RENAME FILES IN DIRECTORIES
 
                 
@@ -1431,21 +1433,26 @@ namespace SeriesSortCleanup
 
 
 
-        #region WINRAR EXTRACT
+        #region WINRAR & 7Zip EXTRACT
 
 
         #region WINRAR GLOBAL VARIABLES
 
         string _sExtractTargetPath = "";
         string _sWinrarPath = "";
+        string _s7ZipPath = "";
 
         #endregion
 
 
-        #region WINRAR Async Threading
+        #region WINRAR & 7Zip Async Threading
         private bool _myRenameTaskIsRunning = false;
         private readonly object _Renamesync = new object();
 
+        private bool _my7ZipTaskIsRunning = false;
+        private readonly object _7Zipsync = new object();
+
+        #region WIN RAR Async Threading
         public bool IsRenameBusy
         {
             get
@@ -1470,7 +1477,7 @@ namespace SeriesSortCleanup
 
                 AsyncOperation async = AsyncOperationManager.CreateOperation(null);
                 worker.BeginInvoke(StepCounter, completedCallback, async);
-                _myTaskIsRunning = true;
+                _myRenameTaskIsRunning = true;
             }
         }
 
@@ -1543,7 +1550,106 @@ namespace SeriesSortCleanup
 
         public event AsyncCompletedEventHandler MyRenameTaskCompleted;
 
-        
+        #endregion
+
+        #region 7-Zip Async Threading
+        public bool Is7ZipBusy
+        {
+            get
+            {
+                return _my7ZipTaskIsRunning;
+            }
+        }
+
+        private delegate void My7ZipTaskWorkerDelegate(int StepCounter);
+
+        public void My7ZipTaskAsync(int StepCounter)
+        {
+            My7ZipTaskWorkerDelegate worker = new My7ZipTaskWorkerDelegate(Extract7Zip);
+            AsyncCallback completedCallback = new AsyncCallback(My7ZipTaskCompletedCallback);
+
+            lock (_7Zipsync)
+            {
+                if (_my7ZipTaskIsRunning)
+                {
+                    throw new InvalidOperationException("The control is currently busy.");
+                }
+
+                AsyncOperation async = AsyncOperationManager.CreateOperation(null);
+                worker.BeginInvoke(StepCounter, completedCallback, async);
+                _my7ZipTaskIsRunning = true;
+            }
+        }
+
+        private void My7ZipTaskCompletedCallback(IAsyncResult ar)
+        {
+            // get the original worker delegate and the AsyncOperation instance
+            My7ZipTaskWorkerDelegate worker = (My7ZipTaskWorkerDelegate)((AsyncResult)ar).AsyncDelegate;
+            AsyncOperation async = (AsyncOperation)ar.AsyncState;
+
+            // finish the asynchronous operation
+            worker.EndInvoke(ar);
+
+            // clear the running task flag
+            lock (_7Zipsync)
+            {
+                _my7ZipTaskIsRunning = false;
+            }
+
+            // raise the completed event
+            AsyncCompletedEventArgs completedArgs = new AsyncCompletedEventArgs(null, false, null);
+            async.PostOperationCompleted((object e) => OnMy7ZipTaskCompleted((AsyncCompletedEventArgs)e), completedArgs);
+        }
+
+        protected virtual void OnMy7ZipTaskCompleted(AsyncCompletedEventArgs e)
+        {
+            if (My7ZipTaskCompleted == null)
+            {
+                foreach (string item in feedback)
+                {
+                    AddFeedback(item);
+                }
+
+                feedback.Clear();
+
+                if (CheckStep == max)
+                {
+                    AddFeedback("");
+                    AddFeedback("--------------------------------------------------------------");
+                    AddFeedback(string.Format("DONE : {0} - Attempted", CheckStep.ToString()));
+
+                    if (ErrorList.Count > 0)
+                    {
+                        int count = ErrorList.Count;
+                        AddFeedback(string.Format("FAILED : {0} ", count.ToString()));
+                        AddFeedback("--------------------------------------------------------------");
+
+                        foreach (string errorList in ErrorList)
+                        {
+                            AddFeedback(string.Format(" - {0} ", errorList.ToString()));
+                        }
+
+                        AddFeedback("--------------------------------------------------------------");
+                    }
+
+                    WriteToLog();
+                }
+                else
+                {
+                    string directory = DirRAR[CheckStep];
+                    AddFeedback(string.Format("Processing : {0} ", directory));
+                    Thread.Sleep(5000);
+                    My7ZipTaskAsync(CheckStep);
+                }
+            }
+            else
+            {
+                My7ZipTaskCompleted(this, e);
+            }
+        }
+
+        public event AsyncCompletedEventHandler My7ZipTaskCompleted;
+
 
         #endregion
 
@@ -1589,6 +1695,58 @@ namespace SeriesSortCleanup
             catch (Exception ex)
             {
                 AddFeedback(string.Format("unrarFiles() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
+        private void Extract7Zip(int step)
+        {
+            /**
+             https://stackoverflow.com/questions/7994477/extract-7zip-in-c-sharp-code
+             **/
+            //const string source = "D:\\22.rar";
+            try
+            {
+                string source = DirRAR[step];
+
+                string destinationFolder = source.Remove(source.LastIndexOf('\\'));
+                System.Diagnostics.Process p = new System.Diagnostics.Process();
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.UseShellExecute = true;
+                string SevenZip = Properties.Settings.Default.SevenZipDir;
+                p.StartInfo.FileName = SevenZip;
+                p.StartInfo.Arguments = string.Format("x \"{0}\" -y -o\"{1}\"", source, destinationFolder);
+                p.Start();
+                p.WaitForExit();
+
+
+                /*
+                ProcessStartInfo pro = new ProcessStartInfo();
+                pro.WindowStyle = ProcessWindowStyle.Hidden;
+                pro.FileName = zPath;
+                pro.Arguments = string.Format("x \"{0}\" -y -o\"{1}\"", sourceArchive, destination);
+                Process x = Process.Start(pro);
+                x.WaitForExit();
+                */
+
+                if (p.HasExited)
+                {
+                    int ExitCode = p.ExitCode;
+
+                    CheckStep++;
+
+                    if (ExitCode == 0)
+                    {
+                        purgeDirectory(destinationFolder);
+                    }
+                    else
+                    {
+                        ErrorList.Add(DirRAR[step]);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AddFeedback(string.Format("Extract7Zip() - ERROR EXCEPTION : {0}", ex.ToString()));
             }
         }
 
@@ -1685,6 +1843,21 @@ namespace SeriesSortCleanup
             }
         }
 
+        private void btnBrowse7Zip_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog filedialog = new OpenFileDialog();
+            filedialog.Filter = "EXE files (*.exe)|*.exe"; // "Text files (*.txt)|*.txt|All files (*.*)|*.*"
+            filedialog.InitialDirectory = @"C:\Program Files\7-Zip";
+
+            DialogResult result = filedialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                _s7ZipPath = filedialog.FileName;
+
+                txt7ZipSrcDir.Text = _s7ZipPath;
+            }
+        }
+
         private void btnBrowseTargetExtract_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog FolderDiag = new FolderBrowserDialog();
@@ -1754,9 +1927,240 @@ namespace SeriesSortCleanup
             }
         }
 
+        private void btn7ZipExtract_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearFeedback();
+
+                AddFeedback("Fetching directories to Extract");
+                AddFeedback("");
+
+                //get and set target directory
+                _sExtractTargetPath = txtTargetExtract.Text;
+                if (Directory.Exists(_sExtractTargetPath))
+                {
+                    Properties.Settings.Default.TargetExtractDir = _sExtractTargetPath;
+                    Properties.Settings.Default.Save();
+                }
+                else
+                {
+                    AddFeedback(string.Format("Directory not exist : {0}", _sExtractTargetPath));
+                    return;
+                }
+
+                // get and set winrar directory
+                _s7ZipPath = txt7ZipSrcDir.Text;
+                if (File.Exists(_s7ZipPath))
+                {
+                    Properties.Settings.Default.SevenZipDir = _s7ZipPath;
+                    Properties.Settings.Default.Save();
+                }
+                else
+                {
+                    AddFeedback(string.Format("File not exist : {0}", _s7ZipPath));
+                    return;
+                }
+
+
+                //getAllDirectories();
+
+                getDirectoriesToExtract();
+
+                CheckStep = 0;
+
+                if (DirRAR.Count > 0)
+                {
+                    AddFeedback("");
+                    string directory = DirRAR[CheckStep];
+                    AddFeedback(string.Format("Processing : {0} ", directory));
+
+                    max = DirRAR.Count;
+                    My7ZipTaskAsync(CheckStep);
+                }
+            }
+            catch (Exception ex)
+            {
+                AddFeedback(string.Format("btnRenameUnrar_Click() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
         #endregion
 
         #endregion
+
+        #endregion
+
+
+        #region RENAME RAR PAR2
+
+        #region RENAME RAR PAR2 GLOBAL VARIABLES
+
+        string _sRARTargetPath = "";
+        string _sNewRARTargetPath = "";
+        string _sRarRenamefilename = "";
+
+        public enum eFILETYPE
+        {
+            RAR = 1,
+            PAR2 = 2
+        }
+
+        #endregion
+
+
+        private string[] getFilesinDir(string path)
+        {
+            string[] files = null;
+            try
+            {
+                files = Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                AddFeedback(string.Format("getFilesinDir() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+
+            return files;
+        }
+
+        private void renameFiles(string[] files, eFILETYPE type)
+        {
+            try
+            {
+                string _sExtention = "";
+                switch (type)
+                {
+                    case eFILETYPE.RAR:
+                        _sExtention = "RAR";
+                        break;
+                    case eFILETYPE.PAR2:
+                        _sExtention = "PAR2";
+                        break;
+                    default:
+                        break;
+                }
+
+                if (!Directory.Exists(_sDestPath))
+                {
+                    Directory.CreateDirectory(_sNewRARTargetPath);
+                }
+
+                if (files.Length > 0)
+                {
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        string dest = string.Format(@"{0}\{1}-{2}.{3}", _sNewRARTargetPath, _sRarRenamefilename, i.ToString(), _sExtention);
+                        string originalFile = files[i];
+
+                        File.Move(originalFile, dest);
+                    }
+                }
+                else
+                {
+                    AddFeedback(string.Format("No files found to rename..."));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                AddFeedback(string.Format("renameFiles() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
+
+        #region RENAME RAR PAR2 EVENTS
+
+        private void btnRenameToRAR_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_sRARTargetPath != "")
+                {
+                    _sNewRARTargetPath = string.Format(@"{0}\RAR", _sRARTargetPath);
+
+                    if (txtRarRenameFilename.Text != "")
+                    {
+                        _sRarRenamefilename = txtRarRenameFilename.Text;
+
+                        string[] files = getFilesinDir(_sRARTargetPath);
+
+                        renameFiles(files, eFILETYPE.RAR);
+
+                        AddFeedback(string.Format("----------------------"));
+                        AddFeedback(string.Format("Done."));
+                    }
+                    else
+                    {
+                        AddFeedback(string.Format("No filename specified."));
+                    }
+                }
+                else
+                {
+                    AddFeedback(string.Format("No target directory specified."));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                AddFeedback(string.Format("btnRenameToRAR_Click() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
+        private void btnRenameToPAR2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_sRARTargetPath != "")
+                {
+                    _sNewRARTargetPath = string.Format(@"{0}\PAR2", _sRARTargetPath);
+
+                    if (txtRarRenameFilename.Text != "")
+                    {
+                        _sRarRenamefilename = txtRarRenameFilename.Text;
+
+                        string[] files = getFilesinDir(_sRARTargetPath);
+
+                        renameFiles(files, eFILETYPE.PAR2);
+
+                        AddFeedback(string.Format("----------------------"));
+                        AddFeedback(string.Format("Done."));
+                    }
+                    else
+                    {
+                        AddFeedback(string.Format("No filename specified."));
+                    }
+                }
+                else
+                {
+                    AddFeedback(string.Format("No target directory specified."));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                AddFeedback(string.Format("btnRenameToPAR2_Click() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
+        private void btnBrowseRarTargetDir_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog FolderDiag = new FolderBrowserDialog();
+            DialogResult result = FolderDiag.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                _sRARTargetPath = FolderDiag.SelectedPath;
+                txtTargetRarDir.Text = _sRARTargetPath;
+            }
+        }
+
+
+        #endregion
+
+        #endregion
+
+
 
     }
 }
