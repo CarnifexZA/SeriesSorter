@@ -42,7 +42,18 @@
             this.lblProgress = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.label10 = new System.Windows.Forms.Label();
+            this.txtRarRenameFilename = new System.Windows.Forms.TextBox();
+            this.btnRenameToRAR = new System.Windows.Forms.Button();
+            this.txtTargetRarDir = new System.Windows.Forms.TextBox();
+            this.label11 = new System.Windows.Forms.Label();
+            this.btnRenameToPAR2 = new System.Windows.Forms.Button();
+            this.btnBrowseRarTargetDir = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.txt7ZipSrcDir = new System.Windows.Forms.TextBox();
+            this.btnBrowse7Zip = new System.Windows.Forms.Button();
+            this.label12 = new System.Windows.Forms.Label();
             this.txtTargetExtract = new System.Windows.Forms.TextBox();
             this.btnBrowseTargetExtract = new System.Windows.Forms.Button();
             this.label9 = new System.Windows.Forms.Label();
@@ -69,8 +80,10 @@
             this.txtSizeMB = new System.Windows.Forms.TextBox();
             this.btnCheckSourceBrowse = new System.Windows.Forms.Button();
             this.btnCheckExport = new System.Windows.Forms.Button();
+            this.btn7ZipExtract = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -162,6 +175,7 @@
             this.button1.TabIndex = 8;
             this.button1.Text = "TEST";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Visible = false;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // progressBar1
@@ -199,6 +213,7 @@
             // 
             this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
+            this.panel2.Controls.Add(this.groupBox5);
             this.panel2.Controls.Add(this.groupBox4);
             this.panel2.Controls.Add(this.groupBox3);
             this.panel2.Controls.Add(this.groupBox2);
@@ -208,8 +223,93 @@
             this.panel2.Size = new System.Drawing.Size(423, 659);
             this.panel2.TabIndex = 12;
             // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.label10);
+            this.groupBox5.Controls.Add(this.txtRarRenameFilename);
+            this.groupBox5.Controls.Add(this.btnRenameToRAR);
+            this.groupBox5.Controls.Add(this.txtTargetRarDir);
+            this.groupBox5.Controls.Add(this.label11);
+            this.groupBox5.Controls.Add(this.btnRenameToPAR2);
+            this.groupBox5.Controls.Add(this.btnBrowseRarTargetDir);
+            this.groupBox5.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            this.groupBox5.Location = new System.Drawing.Point(9, 511);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(405, 99);
+            this.groupBox5.TabIndex = 28;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "Rename To RAR && PAR2";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(5, 30);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(74, 13);
+            this.label10.TabIndex = 24;
+            this.label10.Text = "New Filename";
+            // 
+            // txtRarRenameFilename
+            // 
+            this.txtRarRenameFilename.Location = new System.Drawing.Point(85, 27);
+            this.txtRarRenameFilename.Name = "txtRarRenameFilename";
+            this.txtRarRenameFilename.Size = new System.Drawing.Size(200, 20);
+            this.txtRarRenameFilename.TabIndex = 23;
+            // 
+            // btnRenameToRAR
+            // 
+            this.btnRenameToRAR.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRenameToRAR.Location = new System.Drawing.Point(323, 20);
+            this.btnRenameToRAR.Name = "btnRenameToRAR";
+            this.btnRenameToRAR.Size = new System.Drawing.Size(69, 24);
+            this.btnRenameToRAR.TabIndex = 22;
+            this.btnRenameToRAR.Text = "RAR";
+            this.btnRenameToRAR.UseVisualStyleBackColor = true;
+            this.btnRenameToRAR.Click += new System.EventHandler(this.btnRenameToRAR_Click);
+            // 
+            // txtTargetRarDir
+            // 
+            this.txtTargetRarDir.Location = new System.Drawing.Point(85, 53);
+            this.txtTargetRarDir.Name = "txtTargetRarDir";
+            this.txtTargetRarDir.Size = new System.Drawing.Size(200, 20);
+            this.txtTargetRarDir.TabIndex = 20;
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(25, 56);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(54, 13);
+            this.label11.TabIndex = 19;
+            this.label11.Text = "Target Dir";
+            // 
+            // btnRenameToPAR2
+            // 
+            this.btnRenameToPAR2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRenameToPAR2.Location = new System.Drawing.Point(323, 50);
+            this.btnRenameToPAR2.Name = "btnRenameToPAR2";
+            this.btnRenameToPAR2.Size = new System.Drawing.Size(69, 24);
+            this.btnRenameToPAR2.TabIndex = 21;
+            this.btnRenameToPAR2.Text = "PAR2";
+            this.btnRenameToPAR2.UseVisualStyleBackColor = true;
+            this.btnRenameToPAR2.Click += new System.EventHandler(this.btnRenameToPAR2_Click);
+            // 
+            // btnBrowseRarTargetDir
+            // 
+            this.btnBrowseRarTargetDir.Location = new System.Drawing.Point(291, 50);
+            this.btnBrowseRarTargetDir.Name = "btnBrowseRarTargetDir";
+            this.btnBrowseRarTargetDir.Size = new System.Drawing.Size(26, 24);
+            this.btnBrowseRarTargetDir.TabIndex = 18;
+            this.btnBrowseRarTargetDir.Text = "...";
+            this.btnBrowseRarTargetDir.UseVisualStyleBackColor = true;
+            this.btnBrowseRarTargetDir.Click += new System.EventHandler(this.btnBrowseRarTargetDir_Click);
+            // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.btn7ZipExtract);
+            this.groupBox4.Controls.Add(this.txt7ZipSrcDir);
+            this.groupBox4.Controls.Add(this.btnBrowse7Zip);
+            this.groupBox4.Controls.Add(this.label12);
             this.groupBox4.Controls.Add(this.txtTargetExtract);
             this.groupBox4.Controls.Add(this.btnBrowseTargetExtract);
             this.groupBox4.Controls.Add(this.label9);
@@ -219,21 +319,47 @@
             this.groupBox4.Controls.Add(this.label8);
             this.groupBox4.Location = new System.Drawing.Point(9, 371);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(405, 100);
+            this.groupBox4.Size = new System.Drawing.Size(405, 134);
             this.groupBox4.TabIndex = 27;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Extract Directories";
             // 
+            // txt7ZipSrcDir
+            // 
+            this.txt7ZipSrcDir.Location = new System.Drawing.Point(85, 60);
+            this.txt7ZipSrcDir.Name = "txt7ZipSrcDir";
+            this.txt7ZipSrcDir.Size = new System.Drawing.Size(200, 20);
+            this.txt7ZipSrcDir.TabIndex = 36;
+            // 
+            // btnBrowse7Zip
+            // 
+            this.btnBrowse7Zip.Location = new System.Drawing.Point(291, 57);
+            this.btnBrowse7Zip.Name = "btnBrowse7Zip";
+            this.btnBrowse7Zip.Size = new System.Drawing.Size(26, 24);
+            this.btnBrowse7Zip.TabIndex = 34;
+            this.btnBrowse7Zip.Text = "...";
+            this.btnBrowse7Zip.UseVisualStyleBackColor = true;
+            this.btnBrowse7Zip.Click += new System.EventHandler(this.btnBrowse7Zip_Click);
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(25, 63);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(47, 13);
+            this.label12.TabIndex = 35;
+            this.label12.Text = "7-Zip Dir";
+            // 
             // txtTargetExtract
             // 
-            this.txtTargetExtract.Location = new System.Drawing.Point(85, 61);
+            this.txtTargetExtract.Location = new System.Drawing.Point(85, 94);
             this.txtTargetExtract.Name = "txtTargetExtract";
             this.txtTargetExtract.Size = new System.Drawing.Size(200, 20);
             this.txtTargetExtract.TabIndex = 33;
             // 
             // btnBrowseTargetExtract
             // 
-            this.btnBrowseTargetExtract.Location = new System.Drawing.Point(291, 58);
+            this.btnBrowseTargetExtract.Location = new System.Drawing.Point(291, 91);
             this.btnBrowseTargetExtract.Name = "btnBrowseTargetExtract";
             this.btnBrowseTargetExtract.Size = new System.Drawing.Size(26, 24);
             this.btnBrowseTargetExtract.TabIndex = 31;
@@ -244,7 +370,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(25, 64);
+            this.label9.Location = new System.Drawing.Point(25, 97);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(54, 13);
             this.label9.TabIndex = 32;
@@ -253,11 +379,11 @@
             // btnWinRarExtract
             // 
             this.btnWinRarExtract.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnWinRarExtract.Location = new System.Drawing.Point(323, 59);
+            this.btnWinRarExtract.Location = new System.Drawing.Point(323, 24);
             this.btnWinRarExtract.Name = "btnWinRarExtract";
-            this.btnWinRarExtract.Size = new System.Drawing.Size(69, 23);
+            this.btnWinRarExtract.Size = new System.Drawing.Size(69, 42);
             this.btnWinRarExtract.TabIndex = 30;
-            this.btnWinRarExtract.Text = "Extract";
+            this.btnWinRarExtract.Text = "Extract WinRAR";
             this.btnWinRarExtract.UseVisualStyleBackColor = true;
             this.btnWinRarExtract.Click += new System.EventHandler(this.btnWinRarExtract_Click);
             // 
@@ -483,6 +609,17 @@
             this.btnCheckExport.UseVisualStyleBackColor = true;
             this.btnCheckExport.Click += new System.EventHandler(this.btnCheckExport_Click);
             // 
+            // btn7ZipExtract
+            // 
+            this.btn7ZipExtract.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btn7ZipExtract.Location = new System.Drawing.Point(323, 72);
+            this.btn7ZipExtract.Name = "btn7ZipExtract";
+            this.btn7ZipExtract.Size = new System.Drawing.Size(69, 42);
+            this.btn7ZipExtract.TabIndex = 37;
+            this.btn7ZipExtract.Text = "Extract 7-Zip";
+            this.btn7ZipExtract.UseVisualStyleBackColor = true;
+            this.btn7ZipExtract.Click += new System.EventHandler(this.btn7ZipExtract_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -497,6 +634,8 @@
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             this.groupBox3.ResumeLayout(false);
@@ -552,6 +691,18 @@
         private System.Windows.Forms.TextBox txtTargetExtract;
         private System.Windows.Forms.Button btnBrowseTargetExtract;
         private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.Button btnRenameToRAR;
+        private System.Windows.Forms.TextBox txtTargetRarDir;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Button btnRenameToPAR2;
+        private System.Windows.Forms.Button btnBrowseRarTargetDir;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.TextBox txtRarRenameFilename;
+        private System.Windows.Forms.TextBox txt7ZipSrcDir;
+        private System.Windows.Forms.Button btnBrowse7Zip;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Button btn7ZipExtract;
     }
 }
 
