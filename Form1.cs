@@ -452,10 +452,16 @@ namespace SeriesSortCleanup
         Regex REG_num3_Format = new Regex("([0-9])([0-9])([0-9])");
         Regex REG_num4_Format = new Regex("([0-9])([0-9])([0-9])([0-9])");
         Regex REG_SxxExx_Format = new Regex("([s,S])([0-9])([0-9])([e,E])([0-9])([0-9])");
+        Regex REG_SxxExxExx_Format = new Regex("([s,S])([0-9])([0-9])([e,E])([0-9])([0-9])([e,E])([0-9])([0-9])");
         Regex REG_Sxx_Format = new Regex("([s,S])([0-9])([0-9])");
         Regex REG_Sx_Format = new Regex("([s,S])([0-9])");
         Regex REG_NxNN_Format = new Regex("[0-9]x[0-9][0-9]");
-        Regex REG_x264 = new Regex("(?i)x264");
+        Regex REG_264 = new Regex("264");
+        Regex REG_265 = new Regex("265");
+        Regex REG_x264 = new Regex("(?i)[x,X]264");
+        Regex REG_x265 = new Regex("(?i)[x,X]265");
+        Regex REG_h264 = new Regex("(?i)[h,H]264");
+        Regex REG_h265 = new Regex("(?i)[h,H]265");
         Regex REG_NewsHost = new Regex("(?i)newshost");
         Regex REG_xxxp = new Regex("([0-9][0-9][0-9][p,P])");
 
@@ -611,17 +617,18 @@ namespace SeriesSortCleanup
                 {
                     string testVal = nameArray[i];
 
-                    if (REG_NewsHost.Match(testVal).Success)
+                    if (REG_NewsHost.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_264.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_265.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_x264.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_x265.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_h264.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_h265.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_xxxp.Match(testVal).Success) { /* MOVE ON */ }
+                    else if (REG_SxxExxExx_Format.Match(testVal).Success)
                     {
-                        //move on
-                    }
-                    else if (REG_x264.Match(testVal).Success)
-                    {
-                        //move on
-                    }
-                    else if (REG_xxxp.Match(testVal).Success)
-                    {
-                        //move on
+                        SeasonCount = Convert.ToInt32(testVal.Substring(1, 2));
+                        return SeasonCount;
                     }
                     else if (REG_SxxExx_Format.Match(testVal).Success)
                     {
@@ -681,17 +688,19 @@ namespace SeriesSortCleanup
             {
                 string testVal = nameArray[i];
 
-                if (REG_NewsHost.Match(testVal).Success)
+                
+                if (REG_NewsHost.Match(testVal).Success) { /*move on*/ }
+                else if (REG_264.Match(testVal).Success) { /*move on*/ }
+                else if (REG_265.Match(testVal).Success) { /*move on*/ }
+                else if (REG_x264.Match(testVal).Success) { /*move on*/ }
+                else if (REG_x265.Match(testVal).Success) { /*move on*/ }
+                else if (REG_h264.Match(testVal).Success) { /*move on*/ }
+                else if (REG_h265.Match(testVal).Success) { /*move on*/ }
+                else if (REG_xxxp.Match(testVal).Success) { /*move on*/ }
+                else if (REG_SxxExxExx_Format.Match(testVal).Success)
                 {
-                    //move on
-                }
-                else if (REG_x264.Match(testVal).Success)
-                {
-                    //move on
-                }
-                else if (REG_xxxp.Match(testVal).Success)
-                {
-                    //move on
+                    PositionIndex = i;
+                    break;
                 }
                 else if (REG_SxxExx_Format.Match(testVal).Success)
                 {
@@ -722,7 +731,7 @@ namespace SeriesSortCleanup
                 {
                     PositionIndex = i;
                     break;
-                }
+                } 
             }
 
             string show = string.Join(" ", nameArray, 0, PositionIndex);
@@ -810,13 +819,21 @@ namespace SeriesSortCleanup
             dtInfo.Columns.Add("FullPath", typeof(string));
         }
 
+        private bool HasSubfolders(string path)
+        {
+            IEnumerable<string> subfolders = Directory.EnumerateDirectories(path);
+            return subfolders != null && subfolders.Any();
+        }
+
         private void IterateInfo()
         {
             try
             {
                 PrepDatatable();
 
-                List<string> dirs = new List<string>(Directory.EnumerateDirectories(_sSrcPath));
+                //List<string> dirs = new List<string>(Directory.EnumerateDirectories(_sSrcPath));
+
+                List<string> dirs = new List<string>(Directory.EnumerateDirectories(_sSrcPath,"*",SearchOption.AllDirectories));
 
                 foreach (var item in dirs)
                 {
@@ -824,7 +841,8 @@ namespace SeriesSortCleanup
                     int _iSeason = 0;
                     string _sFile = "";
                     string _sPath = "";
-                    //string _sPath = item.ToString();
+                    //string _sDirPath = item.ToString();
+                    bool bHasSubDir = false;
 
                     List<string> paths = new List<string>(Directory.EnumerateFiles(item.ToString()));
 
@@ -841,7 +859,17 @@ namespace SeriesSortCleanup
                         string test2 = test.Trim('\\');
                         _sShow = getShowName(test2).Trim();
 
+                        if (_sShow == string.Empty)
+                        {
+                            _sShow = getShowName(_sFile).Trim();
+                        }
+
                         _iSeason = getSeason(test2);
+
+                        if (_iSeason <= 0)
+                        {
+                            _iSeason = getSeason(_sFile);
+                        }
 
                         _sPath = files.ToString().Trim();
 
@@ -986,6 +1014,7 @@ namespace SeriesSortCleanup
 
         private void DeleteFiles(int StepCounter)
         {
+            string RootDir = Properties.Settings.Default.sourceDir;
             string SourceFile = dtInfo.Rows[StepCounter]["Path"].ToString();
             string DestFile = dtInfo.Rows[StepCounter]["FullPath"].ToString();
             string msg = "";
@@ -1008,12 +1037,28 @@ namespace SeriesSortCleanup
             if (IsDirectoryEmpty(sourceDir))
             {
                 Directory.Delete(sourceDir);
-                feedback.Add(string.Format("Directory Deleted \t: {0}", sourceDir));
+                feedback.Add(string.Format("Directory Deleted \t: {0}", sourceDir));                
             }
             else
             {
                 feedback.Add("Directory Not Empty. Cannot Delete.");
                 feedback.Add(string.Format("Directory Not Empty \t: {0}", sourceDir));
+            }
+
+            //Attempt to delete up to source root.  
+            while (Directory.GetParent(sourceDir).FullName != RootDir)
+            {
+                sourceDir = Directory.GetParent(sourceDir).FullName;
+                if (IsDirectoryEmpty(sourceDir))
+                {
+                    Directory.Delete(sourceDir);
+                    feedback.Add(string.Format("Directory Deleted \t: {0}", sourceDir));
+                }
+                else
+                {
+                    feedback.Add("Directory Not Empty. Cannot Delete.");
+                    feedback.Add(string.Format("Directory Not Empty \t: {0}", sourceDir));
+                }
             }
         }
 
@@ -1229,6 +1274,9 @@ namespace SeriesSortCleanup
 
                 //get all structures for directories and save in datatable
                 IterateInfo();
+
+                dtInfo.DefaultView.Sort = dtInfo.Columns[0].ColumnName + " ASC";
+                dtInfo = dtInfo.DefaultView.ToTable();
 
                 max = dtInfo.Rows.Count;
                 progressBar1.Maximum = max;
