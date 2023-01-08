@@ -32,5 +32,8 @@
     <Setting Name="TargetExtractDir" Type="System.String" Scope="User">
       <Value Profile="(Default)">G:\Testing\rar series</Value>
     </Setting>
+    <Setting Name="NoFileExtTargetDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)">c:\temp</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
