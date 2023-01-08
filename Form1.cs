@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 
 using System.Threading;
 using System.Runtime.Remoting.Messaging;
-
+using System.Diagnostics;
 
 namespace SeriesSortCleanup
 {
@@ -40,6 +40,7 @@ namespace SeriesSortCleanup
             txt7ZipSrcDir.Text = Properties.Settings.Default.SevenZipDir.ToString();
             txtRenameSize.Text = Properties.Settings.Default.MinRenameSize.ToString();
             txtTargetExtract.Text = Properties.Settings.Default.TargetExtractDir.ToString();
+            txtNoExtTargetDir.Text = Properties.Settings.Default.NoFileExtTargetDir.ToString();
         }
 
         private void AddFeedback(string text)
@@ -1337,11 +1338,11 @@ namespace SeriesSortCleanup
                 
         #region Rename FILES FUNCTIONS
 
-        private void getAllDirectories()
+        private void getAllDirectories(String _sPath)
         {
             try
             {
-                AllDirs = new List<string>(Directory.EnumerateDirectories(_sRenameTargetPath));
+                AllDirs = new List<string>(Directory.EnumerateDirectories(_sPath));
             }
             catch (Exception ex)
             {
@@ -1464,7 +1465,7 @@ namespace SeriesSortCleanup
                 AddFeedback("Fetching directories to Rename");
                 AddFeedback("");
 
-                getAllDirectories();
+                getAllDirectories(_sRenameTargetPath);
 
                 getDirectoriesToRename();
             }
@@ -2204,10 +2205,362 @@ namespace SeriesSortCleanup
         }
 
 
-        #endregion
+
 
         #endregion
 
+        #endregion
+
+
+
+
+        #region NO FILE EXTENSION PAR2
+
+        #region NO FILE EXTENSION PAR2 GLOBAL VARIABLES
+
+        string _sNoExtFileTargetPath = "";
+        List<string> NoExtDirs;
+        List<string> NoExtErrorList;
+
+        #endregion
+
+
+        private void GetNoExtPar2Files()
+        {
+            FileStepCounter = 0;
+            //string fileNameOnly, extension, directoryOnly;
+
+            try
+            {
+                NoExtDirs = new List<string>();
+                NoExtErrorList = new List<string>();
+
+                foreach (var dir in AllDirs)
+                {
+                    string fullPath = dir.ToString();
+                    string[] _sPotentialFiles = Directory.GetFiles(fullPath);
+                    bool bDirTester = true;
+
+                    // Iterate each file & test for extension
+                    foreach (var file in _sPotentialFiles)
+                    {
+                        FileInfo info = new FileInfo(file);
+
+                        if (info.Extension != String.Empty)
+                        {
+                            bDirTester = false;
+                        }
+                    }
+
+                    if(bDirTester)
+                    {
+                        NoExtDirs.Add(fullPath);
+                        AddFeedback(string.Format("Adding No Ext Directory : {0}", fullPath));
+                    }
+
+                }
+
+                AddFeedback(string.Format("---------------------------------------------"));
+                AddFeedback(string.Format("Directories Checked : {0}", AllDirs.Count.ToString()));
+                AddFeedback(string.Format("No Extionsion Directories Found : {0}", NoExtDirs.Count.ToString()));
+
+
+            }
+            catch (Exception ex)
+            {
+                AddFeedback(string.Format("getDirectoriesToRename() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
+        private void RecoverNoExtFiles(int step)
+        {
+            try
+            {
+                //par2 r rwugF.par2 *
+
+                string source = NoExtDirs[step];
+
+                string par2file = GetAndRenameSmallestFile(source);
+
+                string command = string.Format("par2 r {0} *", par2file);
+                ProcessStartInfo ProcessInfo;
+                Process Process = new System.Diagnostics.Process();
+
+                Process.StartInfo = new ProcessStartInfo("cmd.exe", "/k " + command);
+                Process.StartInfo.CreateNoWindow = false;
+                Process.StartInfo.UseShellExecute = false;
+                Process.StartInfo.FileName = "par2.exe";
+                Process.StartInfo.WorkingDirectory = source;
+                Process.StartInfo.Arguments = string.Format(@"r {0} *", par2file);
+                Process.Start();
+                Process.WaitForExit();
+
+                /*ProcessStartInfo ProcessInfo;
+                Process Process;
+                ProcessInfo = new ProcessStartInfo("cmd.exe", "/k " + command);
+                ProcessInfo.CreateNoWindow = true;
+                ProcessInfo.UseShellExecute = true;
+                ProcessInfo.WorkingDirectory = source;
+
+                Process = Process.Start(ProcessInfo);
+
+                Process.WaitForExit();*/
+
+                if (Process.HasExited)
+                {
+                    int ExitCode = Process.ExitCode;
+
+                    CheckStep++;
+
+                    if (ExitCode != 0)
+                    {
+                        NoExtErrorList.Add(NoExtDirs[step]);
+                    }
+                }
+
+                /*string destinationFolder = source.Remove(source.LastIndexOf('\\'));
+                System.Diagnostics.Process p = new System.Diagnostics.Process();
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.UseShellExecute = false;
+                string winrar = Properties.Settings.Default.WinRARDir;
+                p.StartInfo.FileName = winrar;
+                p.StartInfo.Arguments = string.Format(@"x -s ""{0}"" *.* ""{1}\""", source, destinationFolder);
+                p.Start();
+                p.WaitForExit();
+
+                if (p.HasExited)
+                {
+                    int ExitCode = p.ExitCode;
+
+                    CheckStep++;
+
+                    if (ExitCode == 0)
+                    {
+                        purgeDirectory(destinationFolder);
+                    }
+                    else
+                    {
+                        ErrorList.Add(DirRAR[step]);
+                    }
+                }*/
+            }
+            catch (Exception ex)
+            {
+                AddFeedback(string.Format("RecoverNoExtFiles() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }
+        }
+
+        public void ExecuteCommand(string Command)
+        {
+            /*ProcessStartInfo ProcessInfo;
+            Process Process;
+
+            ProcessInfo = new ProcessStartInfo("cmd.exe", "/c " + Command);
+            ProcessInfo.CreateNoWindow = true;
+            ProcessInfo.UseShellExecute = true;
+            //ProcessInfo.WorkingDirectory = 
+
+            Process = Process.Start(ProcessInfo);*/
+        }
+
+        private string GetAndRenameSmallestFile(string sPath)
+        {
+            string returnFile = "";
+
+            try
+            {
+                long lCurrentLowest = 999999999999999999;
+                int iStep = 0;
+                int iCurrentLowset = 0;
+
+                string[] NoExtfiles = Directory.GetFiles(sPath);
+
+                foreach (var file in NoExtfiles)
+                {
+                    FileInfo info = new FileInfo(file);
+                    long b = info.Length;
+
+
+                    if (b < lCurrentLowest)
+                    {
+                        lCurrentLowest = b;
+                        iCurrentLowset = iStep;
+                    }
+                    iStep++;
+                }
+
+                string sOriginal = NoExtfiles[iCurrentLowset];
+                string sNewFileName = Path.ChangeExtension(sOriginal, ".par2");
+                //File.Move(sOriginal, Path.ChangeExtension(sOriginal, ".par2"));
+                File.Move(sOriginal, sNewFileName);
+
+
+                returnFile = sNewFileName.Substring(sNewFileName.LastIndexOf("\\") + 1);
+
+                return returnFile;
+            }
+            catch (Exception ex)
+            {
+                AddFeedback(string.Format("getSmallestFile() - ERROR EXCEPTION : {0}", ex.ToString()));
+                return "";
+            }
+        }
+
+
+        #region NO FILE EXTENSION Recover Async Threading
+
+        private bool _myNoExtRecoverTaskIsRunning = false;
+        private readonly object _NoExtRecoversync = new object();
+
+        public bool IsNoExtRecoverBusy
+        {
+            get
+            {
+                return _myNoExtRecoverTaskIsRunning;
+            }
+        }
+
+        private delegate void MyNoExtRecoverTaskWorkerDelegate(int StepCounter);
+
+        public void MyNoExtRecoverTaskAsync(int StepCounter)
+        {
+            MyNoExtRecoverTaskWorkerDelegate worker = new MyNoExtRecoverTaskWorkerDelegate(RecoverNoExtFiles);
+            AsyncCallback completedCallback = new AsyncCallback(MyNoExtRecoverTaskCompletedCallback);
+
+            lock (_NoExtRecoversync)
+            {
+                if (_myNoExtRecoverTaskIsRunning)
+                {
+                    throw new InvalidOperationException("The control is currently busy.");
+                }
+
+                AsyncOperation async = AsyncOperationManager.CreateOperation(null);
+                worker.BeginInvoke(StepCounter, completedCallback, async);
+                _my7ZipTaskIsRunning = true;
+            }
+        }
+
+        private void MyNoExtRecoverTaskCompletedCallback(IAsyncResult ar)
+        {
+            // get the original worker delegate and the AsyncOperation instance
+            MyNoExtRecoverTaskWorkerDelegate worker = (MyNoExtRecoverTaskWorkerDelegate)((AsyncResult)ar).AsyncDelegate;
+            AsyncOperation async = (AsyncOperation)ar.AsyncState;
+
+            // finish the asynchronous operation
+            worker.EndInvoke(ar);
+
+            // clear the running task flag
+            lock (_NoExtRecoversync)
+            {
+                _myNoExtRecoverTaskIsRunning = false;
+            }
+
+            // raise the completed event
+            AsyncCompletedEventArgs completedArgs = new AsyncCompletedEventArgs(null, false, null);
+            async.PostOperationCompleted((object e) => OnMyNoExtRecoverTaskCompleted((AsyncCompletedEventArgs)e), completedArgs);
+        }
+
+        protected virtual void OnMyNoExtRecoverTaskCompleted(AsyncCompletedEventArgs e)
+        {
+            if (MyNoExtRecoverTaskCompleted == null)
+            {
+                foreach (string item in feedback)
+                {
+                    AddFeedback(item);
+                }
+
+                feedback.Clear();
+
+                if (CheckStep == max)
+                {
+                    AddFeedback("");
+                    AddFeedback("--------------------------------------------------------------");
+                    AddFeedback(string.Format("DONE : {0} - Attempted", CheckStep.ToString()));
+
+                    if (NoExtErrorList.Count > 0)
+                    {
+                        int count = NoExtErrorList.Count;
+                        AddFeedback(string.Format("FAILED : {0} ", count.ToString()));
+                        AddFeedback("--------------------------------------------------------------");
+
+                        foreach (string errorList in NoExtErrorList)
+                        {
+                            AddFeedback(string.Format(" - {0} ", errorList.ToString()));
+                        }
+
+                        AddFeedback("--------------------------------------------------------------");
+                    }
+
+                    WriteToLog();
+                }
+                else
+                {
+                    string directory = NoExtDirs[CheckStep];
+                    AddFeedback(string.Format("Processing : {0} ", directory));
+                    Thread.Sleep(5000);
+                    MyNoExtRecoverTaskAsync(CheckStep);
+                }
+            }
+            else
+            {
+                MyNoExtRecoverTaskCompleted(this, e);
+            }
+        }
+
+        public event AsyncCompletedEventHandler MyNoExtRecoverTaskCompleted;
+
+
+        #endregion
+
+
+        #region NO FILE EXTENSION PAR2 EVENTS
+
+        private void btnNoExtTargetBrowse_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog FolderDiag = new FolderBrowserDialog();
+            DialogResult result = FolderDiag.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                _sNoExtFileTargetPath = FolderDiag.SelectedPath;
+                txtNoExtTargetDir.Text = _sNoExtFileTargetPath;
+            }
+        }
+
+        private void btnNoExtRecover_Click(object sender, EventArgs e)
+        {
+            if (_sNoExtFileTargetPath != "")
+            {
+                Properties.Settings.Default.NoFileExtTargetDir = _sNoExtFileTargetPath;
+                Properties.Settings.Default.Save();
+
+                getAllDirectories(_sNoExtFileTargetPath);
+
+                GetNoExtPar2Files();
+
+                /*foreach (var Dir in NoExtDirs)
+                {
+                    GetAndRenameSmallestFile(Dir);
+                }*/
+
+                CheckStep = 0;
+
+                if (NoExtDirs.Count > 0)
+                {
+                    AddFeedback("");
+                    string directory = NoExtDirs[CheckStep];
+                    AddFeedback(string.Format("Processing : {0} ", directory));
+
+                    max = NoExtDirs.Count;
+                    MyNoExtRecoverTaskAsync(CheckStep);
+                }
+
+            }
+            
+        }
+
+        #endregion
+
+        #endregion
 
 
     }
