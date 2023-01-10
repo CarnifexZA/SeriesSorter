@@ -1071,7 +1071,10 @@ namespace SeriesSortCleanup
             {
                 bool bEqual = false;
 
-                byte[] file1 = File.ReadAllBytes(Source);
+                //***********************************
+                // DISCARDED CODE AS IT CAN ONLY READ UP TO 2GB
+                //***********************************
+                /*byte[] file1 = File.ReadAllBytes(Source);
                 byte[] file2 = File.ReadAllBytes(fullpath);
                 if (file1.Length == file2.Length)
                 {
@@ -1090,7 +1093,34 @@ namespace SeriesSortCleanup
                 {
                     bEqual = false;
                     msg = msg = "Files copied are not equal. Cannot Delete.";
+                }*/
+                //***********************************
+
+                using (FileStream fs1 = new FileStream(Source, FileMode.Open),
+                  fs2 = new FileStream(fullpath, FileMode.Open))
+                {
+                    int c1 = 0;
+                    int c2 = 0;
+                    do
+                    {
+                        c1 = fs1.ReadByte();
+                        c2 = fs2.ReadByte();
+                    }
+                    while (c1 == c2 && c1 != -1 && c2 != -1);
+
+                    if (c1 == c2)
+                    {
+                        bEqual = true;
+                        Console.WriteLine("Files are equal");
+                    }
+                    else
+                    {
+                        bEqual = false;
+                        msg = "Files copied are not equal. Cannot Delete.";
+                        Console.WriteLine("Files are not equal");
+                    }
                 }
+
 
                 if (bEqual)
                 {
