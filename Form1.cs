@@ -2276,16 +2276,14 @@ namespace SeriesSortCleanup
         {
             try
             {
+                //Example of par2cmdline syntax
                 //par2 r rwugF.par2 *
 
                 string source = NoExtDirs[step];
-
                 string par2file = GetAndRenameSmallestFile(source);
-
                 string command = string.Format("par2 r {0} *", par2file);
-                ProcessStartInfo ProcessInfo;
+                
                 Process Process = new System.Diagnostics.Process();
-
                 Process.StartInfo = new ProcessStartInfo("cmd.exe", "/k " + command);
                 Process.StartInfo.CreateNoWindow = false;
                 Process.StartInfo.UseShellExecute = false;
@@ -2295,16 +2293,6 @@ namespace SeriesSortCleanup
                 Process.Start();
                 Process.WaitForExit();
 
-                /*ProcessStartInfo ProcessInfo;
-                Process Process;
-                ProcessInfo = new ProcessStartInfo("cmd.exe", "/k " + command);
-                ProcessInfo.CreateNoWindow = true;
-                ProcessInfo.UseShellExecute = true;
-                ProcessInfo.WorkingDirectory = source;
-
-                Process = Process.Start(ProcessInfo);
-
-                Process.WaitForExit();*/
 
                 if (Process.HasExited)
                 {
@@ -2317,50 +2305,11 @@ namespace SeriesSortCleanup
                         NoExtErrorList.Add(NoExtDirs[step]);
                     }
                 }
-
-                /*string destinationFolder = source.Remove(source.LastIndexOf('\\'));
-                System.Diagnostics.Process p = new System.Diagnostics.Process();
-                p.StartInfo.CreateNoWindow = true;
-                p.StartInfo.UseShellExecute = false;
-                string winrar = Properties.Settings.Default.WinRARDir;
-                p.StartInfo.FileName = winrar;
-                p.StartInfo.Arguments = string.Format(@"x -s ""{0}"" *.* ""{1}\""", source, destinationFolder);
-                p.Start();
-                p.WaitForExit();
-
-                if (p.HasExited)
-                {
-                    int ExitCode = p.ExitCode;
-
-                    CheckStep++;
-
-                    if (ExitCode == 0)
-                    {
-                        purgeDirectory(destinationFolder);
-                    }
-                    else
-                    {
-                        ErrorList.Add(DirRAR[step]);
-                    }
-                }*/
             }
             catch (Exception ex)
             {
                 AddFeedback(string.Format("RecoverNoExtFiles() - ERROR EXCEPTION : {0}", ex.ToString()));
             }
-        }
-
-        public void ExecuteCommand(string Command)
-        {
-            /*ProcessStartInfo ProcessInfo;
-            Process Process;
-
-            ProcessInfo = new ProcessStartInfo("cmd.exe", "/c " + Command);
-            ProcessInfo.CreateNoWindow = true;
-            ProcessInfo.UseShellExecute = true;
-            //ProcessInfo.WorkingDirectory = 
-
-            Process = Process.Start(ProcessInfo);*/
         }
 
         private string GetAndRenameSmallestFile(string sPath)
@@ -2436,7 +2385,7 @@ namespace SeriesSortCleanup
 
                 AsyncOperation async = AsyncOperationManager.CreateOperation(null);
                 worker.BeginInvoke(StepCounter, completedCallback, async);
-                _my7ZipTaskIsRunning = true;
+                _myNoExtRecoverTaskIsRunning = true;
             }
         }
 
@@ -2528,34 +2477,44 @@ namespace SeriesSortCleanup
 
         private void btnNoExtRecover_Click(object sender, EventArgs e)
         {
-            if (_sNoExtFileTargetPath != "")
+            try
             {
-                Properties.Settings.Default.NoFileExtTargetDir = _sNoExtFileTargetPath;
-                Properties.Settings.Default.Save();
-
-                getAllDirectories(_sNoExtFileTargetPath);
-
-                GetNoExtPar2Files();
-
-                /*foreach (var Dir in NoExtDirs)
+                //get and set target directory
+                _sNoExtFileTargetPath = txtNoExtTargetDir.Text;
+                if (Directory.Exists(_sNoExtFileTargetPath))
                 {
-                    GetAndRenameSmallestFile(Dir);
-                }*/
+                    Properties.Settings.Default.NoFileExtTargetDir = _sNoExtFileTargetPath;
+                    Properties.Settings.Default.Save();
 
-                CheckStep = 0;
+                    if (_sNoExtFileTargetPath != "")
+                    {
+                        getAllDirectories(_sNoExtFileTargetPath);
 
-                if (NoExtDirs.Count > 0)
-                {
-                    AddFeedback("");
-                    string directory = NoExtDirs[CheckStep];
-                    AddFeedback(string.Format("Processing : {0} ", directory));
+                        GetNoExtPar2Files();
 
-                    max = NoExtDirs.Count;
-                    MyNoExtRecoverTaskAsync(CheckStep);
+                        CheckStep = 0;
+
+                        if (NoExtDirs.Count > 0)
+                        {
+                            AddFeedback("");
+                            string directory = NoExtDirs[CheckStep];
+                            AddFeedback(string.Format("Processing : {0} ", directory));
+
+                            max = NoExtDirs.Count;
+                            MyNoExtRecoverTaskAsync(CheckStep);
+                        }
+                    }
                 }
-
+                else
+                {
+                    AddFeedback(string.Format("Directory not exist : {0}", _sExtractTargetPath));
+                    return;
+                }                
             }
-            
+            catch (Exception ex)
+            {
+                AddFeedback(string.Format("btnNoExtRecover_Click() - ERROR EXCEPTION : {0}", ex.ToString()));
+            }            
         }
 
         #endregion
